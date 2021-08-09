@@ -1,0 +1,13 @@
+{
+  "TotalDeals": 0,
+  "rate": 1145,
+  "deals": [
+    {
+      "dealno": 0,
+      "sent": 5000,
+      "received": 10000,
+      "profitnumero": 5000,
+      "profitpercentage": 100
+    }
+  ]
+}
