@@ -63,7 +63,7 @@ async def on_ready():
 async def updatecurrency():
     r = req.get("https://api.manana.kr/exchange/rate/KRW/KRW,USD,JPY.json").json()
 
-    usdcurrency = int(r[1]["rate"])
+    usdcurrency = round(r[1]["rate"])
     with open("profit.json") as f:
         jsondata = json.load(f)
         f.close()
@@ -166,5 +166,99 @@ async def abortslot(ctx):
             
             await ctx.reply(f"Successfully deleted Transaction No. {currentnumber}", mention_author=False)
 
+@client.command()
+async def sent(ctx, money=None):
+    if money == None:
+        await ctx.send("Please add money value to the command. `!sent 45.8`(USD currency)")
+    else:
+        result = checkforopen()
+        if result[0] == True:
+            await ctx.reply("There isn't an open slot. Perhaps trying creating a slot with `!makeslot`?", mention_author=False)
+        else:
+            currentnumber = result[1]
+
+            with open("profit.json") as f:
+                jsondata = json.load(f)
+                f.close()
+            
+            rate = jsondata["rate"]
+
+            try:
+                realmoney = round(float(money))
+                total = round(realmoney*rate)
+            
+                Totaldeal = jsondata["TotalDeals"]
+                Totaldeal += 1
+                
+                jsondata["TotalDeals"] = Totaldeal
+                
+                for i in jsondata["deals"]:
+                    if i["dealno"] == currentnumber:
+                        i["sent"] = total
+                        break
+                
+                with open("profit.json", "w") as f:
+                    json.dump(jsondata, f, indent=2)
+                    f.close()
+
+                await ctx.reply(f"Successful:\nUSD: {money}\nKRW: {total}", mention_author=False)
+
+            except:
+                await ctx.reply(f"error: likely that the value wasn't a number.", mention_author=False)
+                
+@client.command()
+async def received(ctx, money=None):
+    if money == None:
+        await ctx.send("Please add money value to the command. `!received 5000`(KRW currency)")
+    else:
+        result = checkforopen()
+        if result[0] == True:
+            await ctx.reply("There isn't an open slot. Perhaps trying creating a slot with `!makeslot`?", mention_author=False)
+        else:
+            jsonlist = result[2]
+
+            if jsonlist["sent"] == None:
+                await ctx.reply("Please use the `!sent USD` command first", mention_author=False)
+            else:
+                currentnumber = result[1]
+
+                with open("profit.json") as f:
+                    jsondata = json.load(f)
+                    f.close()
+
+                Totaldeal = jsondata["TotalDeals"]
+                Totaldeal += 1
+                
+                jsondata["TotalDeals"] = Totaldeal
+
+                try:
+                    realmoney = round(float(money))
+                
+                    for i in jsondata["deals"]:
+                        if i["dealno"] == currentnumber:
+                            i["received"] = realmoney
+                            break
+                    
+                    sentmoney = jsonlist["sent"]
+                    receivedmoney = realmoney
+
+                    profitnumero = receivedmoney - sentmoney
+                    profitpercentage = round(profitnumero/sentmoney*100)
+
+                    i["profitnumero"] = profitnumero
+                    i["profitpercentage"] = profitpercentage
+                    
+                    with open("profit.json", "w") as f:
+                        json.dump(jsondata, f, indent=2)
+                        f.close()
+
+                    await ctx.reply(f"Successful:\nSent: {sentmoney}원\nReceived: {receivedmoney}원\nProfitAmount: {profitnumero}원\nProfitPercentage: {profitpercentage}%", mention_author=False)
+
+                except:
+                    print("placeholder")
+
+@client.command()
+async def sendfile(ctx):
+    await ctx.send(file=discord.File("profit.json"))
 
 client.run("ODczODYzMTE0NTQ4OTk4MTQ0.YQ-mcg.3ErcvT0ALvAZTkq7ZJZrF1YC3no")
