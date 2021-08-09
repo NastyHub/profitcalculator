@@ -4,10 +4,12 @@
   "deals": [
     {
       "dealno": 0,
+      "desc": "Placeholder",
       "sent": 5000,
       "received": 10000,
       "profitnumero": 5000,
-      "profitpercentage": 100
+      "profitpercentage": 100,
+      "done": true
     }
   ]
 }
