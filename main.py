@@ -31,6 +31,27 @@ def checkforopen():
         else:
             return False, getcurrentnumber, mynewlist
 
+def checkopenorder(nameoftheorder):
+    with open("order.json") as f:
+        jsondata = json.load(f)
+        f.close()
+    
+    orderlist = jsondata["orders"]
+
+    for i in orderlist:
+        #print(len(orderlist), i["ordername"], i["finished"])
+        if i["ordername"] == nameoftheorder and i["finished"] == False:
+            hit = True
+            break
+        else:
+            hit = False
+        
+    if hit == False:
+        return True, jsondata
+    else:
+        return False, i
+            
+
 '''
 format2 =  { 
             "dealno" : 1,
@@ -260,5 +281,164 @@ async def received(ctx, money=None):
 @client.command()
 async def sendfile(ctx):
     await ctx.send(file=discord.File("profit.json"))
+    #await ctx.send(file=discord.File("order.json"))
+
+@client.command()
+async def createorder(ctx, name=None, stock=None):
+    if name == None:
+        await ctx.send("Please add name value to the command. `!createorder nameoftheorder`")
+    else:
+        if stock == None:
+            stock = 1
+        else:
+            try:
+                stock = int(stock)
+            except:
+                stock = 1
+        
+        result = checkopenorder(name)
+
+        if result[0] == True:
+            format = {
+            "ordername": name,
+            "stocks": stock,
+            "finished": False
+            }
+
+            jsondata = result[1]
+            jsondata["orders"].append(format)
+
+            with open("order.json", "w") as f:
+                json.dump(jsondata, f, indent=2)
+                f.close()
+
+            prettyprint = json.dumps(format, indent=2)
+
+            await ctx.reply(f"Successfully created an order: ```json\n{prettyprint}```", mention_author=False)
+
+        else:
+            prettyprint = json.dumps(result[1], indent=2)
+            await ctx.reply(f"You already have an open order: ```json\n{prettyprint}```", mention_author=False)
+
+@client.command()
+async def addorder(ctx, name=None, stock=None):
+    if name == None or stock == None:
+        await ctx.send("Please add name and stock value to the command. `!addstock name stock`")
+    else:
+        stock = int(stock)
+
+        result = checkopenorder(name)
+
+        if result[0] == True:
+            await ctx.reply(f"Order named `{name}` does not exist.", mention_author=False)
+        else:
+            orderlist = result[1]
+
+            currentstock = orderlist["stocks"]
+
+            newstock = currentstock + stock
+            
+            orderlist["stocks"] = newstock
+
+            nameoftheorder = orderlist["ordername"]
+
+            with open("order.json") as f:
+                jsondata = json.load(f)
+                f.close()
+
+            for i in jsondata["orders"]:
+                if i["ordername"] == nameoftheorder:
+                    jsondata["orders"].remove(i)
+                    
+                    jsondata["orders"].append(orderlist)
+                    break
+                else:
+                    pass
+
+            with open("order.json", "w") as f:
+                json.dump(jsondata, f, indent=2)
+                f.close()
+            
+            prettyprint = json.dumps(orderlist, indent=2)
+
+            await ctx.reply(f"Successfully added {stock} stock to `{name}`: ```json\n{prettyprint}```", mention_author=False)
+
+@client.command()
+async def finishorder(ctx, name=None, stock=None):
+    if name == None or stock == None:
+        await ctx.send("Please add name and stock value to the command. `!finishorder name stock`")
+    else:
+        stock = int(stock)
+
+        result = checkopenorder(name)
+
+        if result[0] == True:
+            await ctx.reply(f"Order named `{name}` does not exist.", mention_author=False)
+        else:
+            orderlist = result[1]
+
+            currentstock = orderlist["stocks"]
+
+            if currentstock == stock:
+                newstock = 0
+                
+                orderlist["stocks"] = 0
+                orderlist["finished"] = True
+
+                nameoftheorder = orderlist["ordername"]
+
+                with open("order.json") as f:
+                    jsondata = json.load(f)
+                    f.close()
+
+                for i in jsondata["orders"]:
+                    if i["ordername"] == nameoftheorder:
+                        jsondata["orders"].remove(i)
+                        
+                        jsondata["orders"].append(orderlist)
+                        break
+                    else:
+                        pass
+
+                with open("order.json", "w") as f:
+                    json.dump(jsondata, f, indent=2)
+                    f.close()
+                
+                prettyprint = json.dumps(orderlist, indent=2)
+
+                await ctx.reply(f"Successfully finished an order: ```json\n{prettyprint}```", mention_author=False)
+
+            elif currentstock > stock:
+                orderlist = result[1]
+
+                newstock = currentstock - stock
+
+                orderlist["stocks"] = newstock
+
+                nameoftheorder = orderlist["ordername"]
+
+                with open("order.json") as f:
+                    jsondata = json.load(f)
+                    f.close()
+
+                for i in jsondata["orders"]:
+                    if i["ordername"] == nameoftheorder:
+                        jsondata["orders"].remove(i)
+                        
+                        jsondata["orders"].append(orderlist)
+                        break
+                    else:
+                        pass
+
+                with open("order.json", "w") as f:
+                    json.dump(jsondata, f, indent=2)
+                    f.close()
+                
+                prettyprint = json.dumps(orderlist, indent=2)
+
+                await ctx.reply(f"Successfully finished an order: ```json\n{prettyprint}```", mention_author=False)
+
+            else:
+                await ctx.reply(f"You originally had {currentstock} stocks. You can't remove {stock} due to the end result being minus.", mention_author=False)
 
 client.run("ODczODYzMTE0NTQ4OTk4MTQ0.YQ-mcg.3ErcvT0ALvAZTkq7ZJZrF1YC3no")
