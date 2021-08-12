@@ -281,7 +281,7 @@ async def received(ctx, money=None):
 @client.command()
 async def sendfile(ctx):
     await ctx.send(file=discord.File("profit.json"))
-    #await ctx.send(file=discord.File("order.json"))
+    await ctx.send(file=discord.File("order.json"))
 
 @client.command()
 async def createorder(ctx, name=None, stock=None):
